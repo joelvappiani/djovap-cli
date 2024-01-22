@@ -110,15 +110,29 @@ const promptCreateSetup = (options) => {
         });
     }
 
-    // Prompt the questions to the user
-    inquirer
-        //Filter all the questions by options of the command already provided
-        .prompt(
-            questions.filter((question) => {
-                console.log(options);
-                return !Object.keys(options).includes(question.name);
-            })
+    //Filter all the questions by options already provided in the command
+    const questionsToPrompt = questions.filter((question) => {
+        console.log(
+            question.name,
+            options.db,
+            options.package,
+            question.name === 'package'
+        );
+        //Check if the db name is spelled right in the option
+        if (
+            question.name === 'db' &&
+            !['mongoose', 'postgres', 'prisma'].includes(options.db)
         )
+            return question;
+        //Check if the package manager name is spelled right in the option
+        if (question.name === 'package' && !['npm', 'yarn'].includes(options.package))
+            return question;
+        return !Object.keys(options).includes(question.name);
+    });
+
+    //Prompt the questions to the user
+    inquirer
+        .prompt(questionsToPrompt)
         .then((answers) => {
             createProject(answers);
         })
@@ -287,15 +301,19 @@ program
     )
     .option('--ts', 'Initialize the project in typescript', undefined)
     .option(
-        '--db <name>',
-        'Initialize with a database/orm : mongoose | postgres | prisma',
+        '--db <mongoose | postgres | prisma>',
+        'Initialize with a database/orm',
         undefined
     )
     .option('--auth', 'Add JWT auth', undefined)
     .option('--socket', 'Create a socket.io server', undefined)
     .option('--git', 'Initialize a git repository', undefined)
     .option('-d --docker', 'Initialize a dockerfile', undefined)
-    .option('-p, --package <name>', 'Initialize the project with npm or yarn', undefined)
+    .option(
+        '-p, --package <yarn | npm>',
+        'Initialize the project with npm or yarn',
+        undefined
+    )
     .action((options) => {
         promptCreateSetup(options);
     })
