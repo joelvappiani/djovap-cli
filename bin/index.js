@@ -82,7 +82,7 @@ const promptCreateSetup = () => {
     inquirer
         .prompt(questions)
         .then((answers) => {
-            gatherProjectInformations(answers);
+            createProject(answers);
         })
         .catch((error) => {
             throw new Error(error);
@@ -90,12 +90,26 @@ const promptCreateSetup = () => {
 };
 
 // Gets all the templates infos and paths
-const gatherProjectInformations = (answers) => {
+const createProject = (answers) => {
     const { template, name, isTypescript } = answers;
 
-    if (template !== 'express')
-        throw new Error('Djovap generate can only generate express application for now');
+    if (template !== 'express') {
+        console.log(
+            chalk.red('Djovap generate can only generate express application for now')
+        );
+        return;
+    }
 
+    if (!name.length) {
+        console.log(
+            chalk.red(`
+
+❌ Error : You must provide a name to create the application
+            
+            `)
+        );
+        return;
+    }
     const templatePath = path.join(
         __dirname,
         `../generator/templates/nodejs-express/express-${
@@ -109,13 +123,22 @@ const gatherProjectInformations = (answers) => {
         targetPath,
         ...answers,
     };
-    console.log('Options :', options);
 
     if (!createDirectory(targetPath)) {
         return;
     }
     createDirectoryContents(templatePath, name);
-    postProcess(options);
+    const result = postProcess(options);
+    console.log(result);
+    if (result) {
+        console.log(
+            chalk.green(`
+        
+✅ Generation completed successfully !
+        
+        `)
+        );
+    }
 };
 
 //Create the project in the right directory
@@ -123,7 +146,11 @@ const createDirectory = (projectPath) => {
     if (fs.existsSync(projectPath)) {
         console.log(
             chalk.red(
-                `Folder ${projectPath} exists already. Delete it or use another name.`
+                `
+                
+❌ Folder ${projectPath} exists already. Delete it or use another name.
+                
+                `
             )
         );
         return false;
@@ -180,13 +207,25 @@ const postProcess = (options) => {
         if (options.isYarn === 'yarn') {
             const result = shell.exec('yarn install');
             if (result.code !== 0) {
-                chalk.red("Couldn't install node dependencies please run npm install");
+                console.log(
+                    chalk.orange(`
+                    
+⚠ Couldn't install node dependencies please run yarn install
+
+                    `)
+                );
                 return false;
             }
         } else if (options.isYarn === 'npm') {
             const result = shell.exec('npm install');
             if (result.code !== 0) {
-                chalk.red("Couldn't install node dependencies please run yarn install");
+                console.log(
+                    chalk.orange(`
+                    
+⚠ Couldn't install node dependencies please run npm install
+
+                    `)
+                );
                 return false;
             }
         }
