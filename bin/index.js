@@ -53,7 +53,7 @@ const questions = [
         type: 'list',
         message: 'Would you like to add a socket.io server?',
         choices: ['yes', 'no'],
-        default: 'yes',
+        default: 'no',
     },
     {
         name: 'package',
@@ -240,6 +240,37 @@ const createDirectoryContents = (templatePath, projectName) => {
         }
     });
 };
+
+//Adds connection to a db and basic structure and CRUD
+const handleDBSystem = (db) => {
+    switch (db) {
+        case 'mongoose':
+            break;
+        case 'postgres':
+            break;
+        case 'prisma':
+            break;
+    }
+};
+
+// adds jwt auth to the template
+const handleAuth = (db) => {
+    switch (db) {
+        case 'mongoose':
+            shell.cd(options.targetPath);
+            shell.exec(
+                options.package === 'yarn' ? 'yarn add mongoose' : 'npm install mongoose'
+            );
+            break;
+        case 'postgres':
+            break;
+        case 'prisma':
+            break;
+    }
+};
+
+//Creates a websocket server with socket.io
+const handleSocket = () => {};
 
 //Commands to execute once the structured is copied
 const postProcess = (options) => {
