@@ -157,9 +157,9 @@ const createProject = (answers) => {
     }
     const templatePath = path.join(
         __dirname,
-        `../generator/templates/nodejs-express/express-${
-            ts === 'yes' ? 'ts' : 'js'
-        }/express-core`
+        `../generator/templates/nodejs-express/express-${ts === 'yes' ? 'ts' : 'js'}/${
+            answers.db
+        }/express-${answers.db}${answers.auth === 'yes' ? '-jwt' : ''}`
     );
     const targetPath = path.join(CURR_DIR, name);
 
