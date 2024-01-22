@@ -7,6 +7,7 @@ import path from 'path';
 import { URL } from 'url';
 import * as ejs from 'ejs';
 import shell from 'shelljs';
+
 //Handles __dirname in ES modules node
 const __dirname = new URL('.', import.meta.url).pathname;
 
@@ -15,47 +16,47 @@ const CURR_DIR = process.cwd();
 
 //List of questions that can be prompted to the user
 const questions = [
-    {
-        name: 'template',
-        type: 'list',
-        message: 'What project template would you like to generate?',
-        choices: ['express'],
-    },
+    // {
+    //     name: 'template',
+    //     type: 'list',
+    //     message: 'What project template would you like to generate?',
+    //     choices: ['express'],
+    // },
     {
         name: 'name',
         type: 'input',
         message: 'Project name:',
     },
     {
-        name: 'isTypescript',
+        name: 'ts',
         type: 'list',
         message: 'Would you like to use typescript in your project?',
         choices: ['yes', 'no'],
         default: 'yes',
     },
-    // {
-    //     name: 'database',
-    //     type: 'list',
-    //     message: 'What kind of database/ORM would you like to use?',
-    //     choices: ['mongoose', 'postgres', 'prisma'],
-    //     default: 'mongoose',
-    // },
-    // {
-    //     name: 'auth',
-    //     type: 'list',
-    //     message: 'Would you like to enable jwt auth?',
-    //     choices: ['yes', 'no'],
-    //     default: 'yes',
-    // },
-    // {
-    //     name: 'socket',
-    //     type: 'list',
-    //     message: 'Would you like to add a socket.io server?',
-    //     choices: ['yes', 'no'],
-    //     default: 'yes',
-    // },
     {
-        name: 'isYarn',
+        name: 'db',
+        type: 'list',
+        message: 'What kind of database/ORM would you like to use?',
+        choices: ['mongoose', 'postgres', 'prisma'],
+        default: 'mongoose',
+    },
+    {
+        name: 'auth',
+        type: 'list',
+        message: 'Would you like to enable jwt auth?',
+        choices: ['yes', 'no'],
+        default: 'yes',
+    },
+    {
+        name: 'socket',
+        type: 'list',
+        message: 'Would you like to add a socket.io server?',
+        choices: ['yes', 'no'],
+        default: 'yes',
+    },
+    {
+        name: 'package',
         type: 'list',
         message: 'Do yo prefer to use yarn or npm for this project?',
         choices: ['yarn', 'npm'],
@@ -78,9 +79,46 @@ const questions = [
 ];
 
 // Generate prompt to ask the user what application he would like to create.
-const promptCreateSetup = () => {
+const promptCreateSetup = (options) => {
+    //If argument d is passed to command then create the default template without prompt
+    if (options.default === true) {
+        return createProject({
+            template: 'express',
+            name: 'server',
+            ts: 'yes',
+            db: 'prisma',
+            auth: 'yes',
+            socket: 'yes',
+            package: 'yarn',
+            docker: 'yes',
+            git: 'yes',
+        });
+    }
+
+    //If argument b is passed to command then create a very basic js template without prompt
+    if (options.basic === true) {
+        return createProject({
+            template: 'express',
+            name: 'server',
+            ts: 'no',
+            db: 'mongoose',
+            auth: 'no',
+            socket: 'no',
+            package: 'yarn',
+            docker: 'no',
+            git: 'no',
+        });
+    }
+
+    // Prompt the questions to the user
     inquirer
-        .prompt(questions)
+        //Filter all the questions by options of the command already provided
+        .prompt(
+            questions.filter((question) => {
+                console.log(options);
+                return !Object.keys(options).includes(question.name);
+            })
+        )
         .then((answers) => {
             createProject(answers);
         })
@@ -91,14 +129,7 @@ const promptCreateSetup = () => {
 
 // Gets all the templates infos and paths
 const createProject = (answers) => {
-    const { template, name, isTypescript } = answers;
-
-    if (template !== 'express') {
-        console.log(
-            chalk.red('Djovap generate can only generate express application for now')
-        );
-        return;
-    }
+    const { name, ts } = answers;
 
     if (!name.length) {
         console.log(
@@ -113,7 +144,7 @@ const createProject = (answers) => {
     const templatePath = path.join(
         __dirname,
         `../generator/templates/nodejs-express/express-${
-            isTypescript ? 'ts' : 'js'
+            ts === 'yes' ? 'ts' : 'js'
         }/express-core`
     );
     const targetPath = path.join(CURR_DIR, name);
@@ -165,7 +196,7 @@ const createDirectoryContents = (templatePath, projectName) => {
     const SKIP_FILES = ['node_modules', '.template.json'];
     // read all files/folders (1 level) from template folder
     const filesToCreate = fs.readdirSync(templatePath);
-    console.log('files to create : ', filesToCreate);
+
     // loop each file/folder
     filesToCreate.forEach((file) => {
         const origFilePath = path.join(templatePath, file);
@@ -198,13 +229,12 @@ const createDirectoryContents = (templatePath, projectName) => {
 
 //Commands to execute once the structured is copied
 const postProcess = (options) => {
-    console.log('Post process options', options);
     const isNode = fs.existsSync(path.join(options.templatePath, 'package.json'));
     if (isNode) {
         // cd to project directory
         shell.cd(options.targetPath);
         //install with yarn or npm
-        if (options.isYarn === 'yarn') {
+        if (options.package === 'yarn') {
             const result = shell.exec('yarn install');
             if (result.code !== 0) {
                 console.log(
@@ -216,7 +246,7 @@ const postProcess = (options) => {
                 );
                 return false;
             }
-        } else if (options.isYarn === 'npm') {
+        } else if (options.package === 'npm') {
             const result = shell.exec('npm install');
             if (result.code !== 0) {
                 console.log(
@@ -248,18 +278,25 @@ const postProcess = (options) => {
 // Execute the command on 'generate'
 program
     .command('generate')
-    .description('Generates an application setup')
-    // .option('-e', '--express', 'Create an express application')
-    // .option('--ts', 'Initialize the project in typescript')
-    // .option(
-    //     '--db <name>',
-    //     'Initialize with a database/orm : mongoose | postgres | prisma'
-    // )
-    // .option('-a', '--auth', 'Add JWT auth')
-    // .option('-s', '--socket', 'Create a socket.io server')
-    // .option('-d', '--docker', 'Add a dockerfile')
-    // .option('--git', 'Initialize a git repository')
+    .description('Generates an express application setup')
+    .option('-b, --basic', 'Creates a very basic express application', undefined)
+    .option(
+        '-d, --default',
+        'Creates a default express typescript application',
+        undefined
+    )
+    .option('--ts', 'Initialize the project in typescript', undefined)
+    .option(
+        '--db <name>',
+        'Initialize with a database/orm : mongoose | postgres | prisma',
+        undefined
+    )
+    .option('--auth', 'Add JWT auth', undefined)
+    .option('--socket', 'Create a socket.io server', undefined)
+    .option('--git', 'Initialize a git repository', undefined)
+    .option('-d --docker', 'Initialize a dockerfile', undefined)
+    .option('-p, --package <name>', 'Initialize the project with npm or yarn', undefined)
     .action((options) => {
-        promptCreateSetup();
+        promptCreateSetup(options);
     })
     .parse(process.argv);
