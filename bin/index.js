@@ -16,12 +16,6 @@ const CURR_DIR = process.cwd();
 
 //List of questions that can be prompted to the user
 const questions = [
-    // {
-    //     name: 'template',
-    //     type: 'list',
-    //     message: 'What project template would you like to generate?',
-    //     choices: ['express'],
-    // },
     {
         name: 'name',
         type: 'input',
@@ -37,8 +31,8 @@ const questions = [
     {
         name: 'db',
         type: 'list',
-        message: 'What kind of database/ORM would you like to use?',
-        choices: ['mongoose', 'postgres', 'prisma'],
+        message: 'What kind of database would you like to use?',
+        choices: ['mongoDB', 'postgreSQL'],
         default: 'mongoose',
     },
     {
@@ -86,7 +80,7 @@ const promptCreateSetup = (options) => {
             template: 'express',
             name: 'server',
             ts: 'yes',
-            db: 'prisma',
+            db: 'mongoDB',
             auth: 'yes',
             socket: 'yes',
             package: 'yarn',
@@ -101,7 +95,7 @@ const promptCreateSetup = (options) => {
             template: 'express',
             name: 'server',
             ts: 'no',
-            db: 'mongoose',
+            db: 'mongoDB',
             auth: 'no',
             socket: 'no',
             package: 'yarn',
@@ -112,17 +106,8 @@ const promptCreateSetup = (options) => {
 
     //Filter all the questions by options already provided in the command
     const questionsToPrompt = questions.filter((question) => {
-        console.log(
-            question.name,
-            options.db,
-            options.package,
-            question.name === 'package'
-        );
         //Check if the db name is spelled right in the option
-        if (
-            question.name === 'db' &&
-            !['mongoose', 'postgres', 'prisma'].includes(options.db)
-        )
+        if (question.name === 'db' && !['mongoDB', 'postgreSQL'].includes(options.db))
             return question;
         //Check if the package manager name is spelled right in the option
         if (question.name === 'package' && !['npm', 'yarn'].includes(options.package))
@@ -159,7 +144,9 @@ const createProject = (answers) => {
         __dirname,
         `../generator/templates/nodejs-express/express-${ts === 'yes' ? 'ts' : 'js'}/${
             answers.db
-        }/express-${answers.db}${answers.auth === 'yes' ? '-jwt' : ''}`
+        }/express-${answers.db === 'mongoDB' ? 'mongoose' : 'postgres'}${
+            answers.auth === 'yes' ? '-jwt' : ''
+        }`
     );
     const targetPath = path.join(CURR_DIR, name);
 
@@ -248,8 +235,6 @@ const handleDBSystem = (db) => {
             break;
         case 'postgres':
             break;
-        case 'prisma':
-            break;
     }
 };
 
@@ -263,8 +248,6 @@ const handleAuth = (db) => {
             );
             break;
         case 'postgres':
-            break;
-        case 'prisma':
             break;
     }
 };
@@ -320,9 +303,9 @@ const postProcess = (options) => {
     return true;
 };
 
-// Execute the command on 'generate'
+// Execute the generator on 'create'
 program
-    .command('generate')
+    .command('create-express-app')
     .description('Generates an express application setup')
     .option('-b, --basic', 'Creates a very basic express application', undefined)
     .option(
@@ -331,11 +314,7 @@ program
         undefined
     )
     .option('--ts', 'Initialize the project in typescript', undefined)
-    .option(
-        '--db <mongoose | postgres | prisma>',
-        'Initialize with a database/orm',
-        undefined
-    )
+    .option('--db <mongoDB | postgreSQL>', 'Initialize with a database', undefined)
     .option('--auth', 'Add JWT auth', undefined)
     .option('--socket', 'Create a socket.io server', undefined)
     .option('--git', 'Initialize a git repository', undefined)
