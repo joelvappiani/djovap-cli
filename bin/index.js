@@ -159,7 +159,7 @@ const createProject = (answers) => {
     }
     createDirectoryContents(templatePath, name);
     const result = postProcess(options);
-    console.log(result);
+
     if (result) {
         console.log(
             chalk.green(`
@@ -268,6 +268,13 @@ const postProcess = (options) => {
         shell.cd(options.targetPath);
         //install with yarn or npm
         if (options.package === 'yarn') {
+            console.log(
+                chalk.yellow(`
+                
+Installing node dependencies...
+
+                `)
+            );
             const result = shell.exec('yarn install');
             if (result.code !== 0) {
                 console.log(
