@@ -142,11 +142,9 @@ const createProject = (answers) => {
     }
     const templatePath = path.join(
         __dirname,
-        `../generator/templates/nodejs-express/express-${ts === 'yes' ? 'ts' : 'js'}/${
-            answers.db
-        }/express-${answers.db === 'mongoDB' ? 'mongoose' : 'postgres'}${
-            answers.auth === 'yes' ? '-jwt' : ''
-        }`
+        `../generator/templates/express/${
+            ts === 'yes' ? 'typescript' : 'javascript'
+        }/core`
     );
     const targetPath = path.join(CURR_DIR, name);
 
@@ -194,7 +192,7 @@ const createDirectory = (projectPath) => {
 //
 const createDirectoryContents = (templatePath, projectName) => {
     // list of the files we don't want to copy
-    const SKIP_FILES = ['node_modules', '.template.json'];
+    const SKIP_FILES = ['node_modules', 'yarn-error.log', 'yarn.lock', '.git'];
     // read all files/folders (1 level) from template folder
     const filesToCreate = fs.readdirSync(templatePath);
 
@@ -211,6 +209,13 @@ const createDirectoryContents = (templatePath, projectName) => {
         if (stats.isFile()) {
             // read file content and transform it using template engine
             let contents = fs.readFileSync(origFilePath, 'utf8');
+            if (file === 'package.json') {
+                // Replace project name with an ejs variable to be able to change it for each use
+                contents = contents.replace(
+                    /"name": "template"/,
+                    '"name": "<%= projectName %>"'
+                );
+            }
             // Rendering by ejs allows to use the projectName variable in package.json
             contents = ejs.render(contents, { projectName });
             // write file to destination folder
@@ -229,7 +234,7 @@ const createDirectoryContents = (templatePath, projectName) => {
 };
 
 //Adds connection to a db and basic structure and CRUD
-const handleDBSystem = (db) => {
+const generateDbConnection = (db) => {
     switch (db) {
         case 'mongoose':
             break;
@@ -239,7 +244,7 @@ const handleDBSystem = (db) => {
 };
 
 // adds jwt auth to the template
-const handleAuth = (db) => {
+const generateAuth = (db) => {
     switch (db) {
         case 'mongoose':
             shell.cd(options.targetPath);
@@ -274,6 +279,9 @@ const postProcess = (options) => {
                 );
                 return false;
             }
+            options.db === 'mongoDB'
+                ? shell.exec('yarn add mongoose')
+                : shell.exec('yarn add pg');
         } else if (options.package === 'npm') {
             const result = shell.exec('npm install');
             if (result.code !== 0) {
@@ -286,6 +294,9 @@ const postProcess = (options) => {
                 );
                 return false;
             }
+            options.db === 'mongoDB'
+                ? shell.exec('npm install mongoose')
+                : shell.exec('npm install pg');
         }
     }
     if (options.git === 'yes') {
@@ -303,7 +314,7 @@ const postProcess = (options) => {
     return true;
 };
 
-// Execute the generator on 'create'
+// Execute the generator on 'create-express-app'
 program
     .command('create-express-app')
     .description('Generates an express application setup')
