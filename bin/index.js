@@ -158,6 +158,7 @@ const createProject = (answers) => {
         return;
     }
     createDirectoryContents(templatePath, name);
+    handleSocket(options, templatePath, name);
     const result = postProcess(options);
 
     if (result) {
@@ -233,6 +234,53 @@ const createDirectoryContents = (templatePath, projectName) => {
     });
 };
 
+//If a file or a folder exists : remove it before continuing
+const removeIfExists = (writePath) => {
+    if (fs.existsSync(writePath)) {
+        fs.rmSync(writePath, { recursive: true });
+    }
+};
+//If the folder exists skip the creation of it
+const skipIfExist = (writePath) => {
+    const SKIP_FOLDERS = ['src', 'config', 'env'];
+    return SKIP_FOLDERS.includes(writePath.split('/').slice(-1)[0]);
+};
+
+const modifyDirectoryContents = (templatePath, projectName) => {
+    // list of the files we don't want to copy
+
+    // read all files/folders (1 level) from template folder
+    const filesToCreate = fs.readdirSync(templatePath);
+
+    // loop each file/folder
+    filesToCreate.forEach((file) => {
+        const origFilePath = path.join(templatePath, file);
+
+        // get stats about the current file to know if it's a file or a directory
+        const stats = fs.statSync(origFilePath);
+        // Path to create file/folder
+        const writePath = path.join(CURR_DIR, projectName, file);
+        // Remove before creating if it's not src folder
+
+        if (stats.isFile()) {
+            removeIfExists(writePath);
+            // read file and wright it at the right path
+            let contents = fs.readFileSync(origFilePath, 'utf8');
+            fs.writeFileSync(writePath, contents, 'utf8');
+        } else if (stats.isDirectory()) {
+            // create folder in destination folder if the folder doesn't exist
+            if (!skipIfExist(writePath)) {
+                fs.mkdirSync(path.join(CURR_DIR, projectName, file));
+            }
+            // copy files/folder inside current folder recursively
+            modifyDirectoryContents(
+                path.join(templatePath, file),
+                path.join(projectName, file)
+            );
+        }
+    });
+};
+
 //Adds connection to a db and basic structure and CRUD
 const generateDbConnection = (db) => {
     switch (db) {
@@ -258,7 +306,11 @@ const generateAuth = (db) => {
 };
 
 //Creates a websocket server with socket.io
-const handleSocket = () => {};
+const handleSocket = (options, corePath, projectName) => {
+    if (options.socket !== 'yes') return;
+    const socketPath = corePath.replace(/core/, 'socket');
+    modifyDirectoryContents(socketPath, projectName);
+};
 
 //Commands to execute once the structured is copied
 const postProcess = (options) => {
@@ -286,6 +338,7 @@ Installing node dependencies...
                 );
                 return false;
             }
+            options.socket === 'yes' && shell.exec('yarn add socket.io');
             options.db === 'mongoDB'
                 ? shell.exec('yarn add mongoose')
                 : shell.exec('yarn add pg');
@@ -301,6 +354,7 @@ Installing node dependencies...
                 );
                 return false;
             }
+            options.socket === 'yes' && shell.exec('npm install socket.io');
             options.db === 'mongoDB'
                 ? shell.exec('npm install mongoose')
                 : shell.exec('npm install pg');
