@@ -28,4 +28,6 @@ app.listen(PORT, () => {
     console.log(`Server connected on port ${PORT}`)
 })
 
-socketServer.listen(SOCKET_PORT)
+socketServer.listen(SOCKET_PORT, () => {
+    console.log(`Socket available on port ${SOCKET_PORT}`)
+})

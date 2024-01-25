@@ -159,15 +159,17 @@ const createProject = (answers) => {
     }
     createDirectoryContents(templatePath, name);
     handleSocket(options, templatePath, name);
+    handleDb(options, templatePath, name);
+    addEnvVar(targetPath, options);
     const result = postProcess(options);
 
     if (result) {
         console.log(
             chalk.green(`
-        
-✅ Generation completed successfully !
-        
-        `)
+
+    ✅ Generation completed successfully !
+
+            `)
         );
     }
 };
@@ -240,15 +242,14 @@ const removeIfExists = (writePath) => {
         fs.rmSync(writePath, { recursive: true });
     }
 };
+
 //If the folder exists skip the creation of it
 const skipIfExist = (writePath) => {
-    const SKIP_FOLDERS = ['src', 'config', 'env'];
+    const SKIP_FOLDERS = ['src', 'config'];
     return SKIP_FOLDERS.includes(writePath.split('/').slice(-1)[0]);
 };
 
 const modifyDirectoryContents = (templatePath, projectName) => {
-    // list of the files we don't want to copy
-
     // read all files/folders (1 level) from template folder
     const filesToCreate = fs.readdirSync(templatePath);
 
@@ -263,7 +264,9 @@ const modifyDirectoryContents = (templatePath, projectName) => {
         // Remove before creating if it's not src folder
 
         if (stats.isFile()) {
+            //Remove file if exists
             removeIfExists(writePath);
+
             // read file and wright it at the right path
             let contents = fs.readFileSync(origFilePath, 'utf8');
             fs.writeFileSync(writePath, contents, 'utf8');
@@ -281,35 +284,101 @@ const modifyDirectoryContents = (templatePath, projectName) => {
     });
 };
 
+// Modify env variables and add the right variables depending on the options
+const addEnvVar = (targetPath, options) => {
+    const envPath = path.join(targetPath, '/env');
+    if (options.socket === 'yes') {
+        fs.appendFile(
+            `${envPath}/.env.development`,
+            '\nSOCKET_PORT=3100',
+            'utf8',
+            (err) => {
+                if (err) {
+                    console.log(chalk.red('Impossible to add environment variable'));
+                }
+            }
+        );
+        fs.appendFile(
+            `${envPath}/.env.production`,
+            '\nSOCKET_PORT=4100',
+            'utf8',
+            (err) => {
+                if (err) {
+                    console.log(chalk.red('Impossible to add environment variable'));
+                }
+            }
+        );
+        fs.appendFile(`${envPath}/.env.staging`, '\nSOCKET_PORT=5100', 'utf8', (err) => {
+            if (err) {
+                console.log(chalk.red('Impossible to add environment variable'));
+            }
+        });
+    }
+    if (options.db === 'mongoDB') {
+        fs.appendFile(
+            `${envPath}/.env.development`,
+            '\nDB_CONNECTION_STRING=mongodb+srv://.../template',
+            'utf8',
+            (err) => {
+                if (err) {
+                    console.log(chalk.red('Impossible to add environment variable'));
+                }
+            }
+        );
+        fs.appendFile(
+            `${envPath}/.env.production`,
+            '\nDB_CONNECTION_STRING=mongodb+srv://.../template',
+            'utf8',
+            (err) => {
+                if (err) {
+                    console.log(chalk.red('Impossible to add environment variable'));
+                }
+            }
+        );
+        fs.appendFile(
+            `${envPath}/.env.staging`,
+            '\nDB_CONNECTION_STRING=mongodb+srv://.../template',
+            'utf8',
+            (err) => {
+                if (err) {
+                    console.log(chalk.red('Impossible to add environment variable'));
+                }
+            }
+        );
+    }
+};
+
 //Adds connection to a db and basic structure and CRUD
-const generateDbConnection = (db) => {
-    switch (db) {
-        case 'mongoose':
-            break;
-        case 'postgres':
-            break;
+const handleDb = (options, corePath, projectName) => {
+    if (options.db === 'mongoDB') {
+        const mongoosePath = corePath.replace(/core/, 'mongoose');
+        modifyDirectoryContents(mongoosePath, projectName, 'mongoose');
+    } else if (options.db === 'postgreSQL') {
+        // complete later
+    } else {
+        throw new Error('Error in option.db');
     }
 };
 
 // adds jwt auth to the template
-const generateAuth = (db) => {
-    switch (db) {
-        case 'mongoose':
-            shell.cd(options.targetPath);
-            shell.exec(
-                options.package === 'yarn' ? 'yarn add mongoose' : 'npm install mongoose'
-            );
-            break;
-        case 'postgres':
-            break;
-    }
-};
+// const handleAuth = (db) => {
+//     switch (db) {
+//         case 'mongoose':
+//             shell.cd(options.targetPath);
+//             shell.exec(
+//                 options.package === 'yarn' ? 'yarn add mongoose' : 'npm install mongoose'
+//             );
+//             break;
+//         case 'postgres':
+//             break;
+//     }
+// };
 
 //Creates a websocket server with socket.io
 const handleSocket = (options, corePath, projectName) => {
     if (options.socket !== 'yes') return;
     const socketPath = corePath.replace(/core/, 'socket');
-    modifyDirectoryContents(socketPath, projectName);
+    modifyDirectoryContents(socketPath, projectName, 'socket');
 };
 
 //Commands to execute once the structured is copied
