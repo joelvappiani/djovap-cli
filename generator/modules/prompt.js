@@ -26,7 +26,7 @@ const questions = [
         name: 'auth',
         type: 'list',
         message: 'Would you like to enable jwt auth?',
-        choices: ['yes', 'no'],
+        choices: ['jwt', 'no'],
         default: 'yes',
     },
     {
