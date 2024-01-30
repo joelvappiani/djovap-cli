@@ -28,6 +28,7 @@ const postProcess = (options) => {
                 console.log(chalk.orange(errorMessage));
                 return false;
             }
+
             //install dependencies depending on options
             options.socket === 'yes' && shell.exec('yarn add socket.io');
             options.db === 'mongoDB'
