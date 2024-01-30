@@ -62,6 +62,38 @@ const addEnvVar = (targetPath, options) => {
             }
         );
     }
+    if (options.auth === 'jwt') {
+        fs.appendFile(
+            `${envPath}/.env.development`,
+            "\nACCESS_TOKEN_SECRET='<access_token_secret>'\nREFRESH_TOKEN_SECRET='<refresh_token_secret>'",
+            'utf8',
+            (err) => {
+                if (err) {
+                    console.log(chalk.red('Impossible to add environment variable'));
+                }
+            }
+        );
+        fs.appendFile(
+            `${envPath}/.env.production`,
+            "\nACCESS_TOKEN_SECRET='<access_token_secret>'\nREFRESH_TOKEN_SECRET='<refresh_token_secret>'",
+            'utf8',
+            (err) => {
+                if (err) {
+                    console.log(chalk.red('Impossible to add environment variable'));
+                }
+            }
+        );
+        fs.appendFile(
+            `${envPath}/.env.staging`,
+            "\nACCESS_TOKEN_SECRET='<access_token_secret>'\nREFRESH_TOKEN_SECRET='<refresh_token_secret>'",
+            'utf8',
+            (err) => {
+                if (err) {
+                    console.log(chalk.red('Impossible to add environment variable'));
+                }
+            }
+        );
+    }
 };
 
 export default addEnvVar;

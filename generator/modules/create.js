@@ -8,18 +8,27 @@ import path from 'path';
 import fs from 'fs';
 import { CURR_DIR, __dirname } from '../../bin/index.js';
 
+const noNameMessage = `
+
+    ❌ Error : You must provide a name to create the application
+                
+`;
+const successMessage = `
+
+    ✅ Generation completed successfully !
+
+`;
+
 //Create the project in the right directory
 const createDirectory = (projectPath) => {
+    const alreadyExistsMessage = `
+                
+    ❌ Folder ${projectPath} exists already. Delete it or use another name.
+                    
+    `;
+
     if (fs.existsSync(projectPath)) {
-        console.log(
-            chalk.red(
-                `
-                
-❌ Folder ${projectPath} exists already. Delete it or use another name.
-                
-                `
-            )
-        );
+        console.log(chalk.red(alreadyExistsMessage));
         return false;
     }
     fs.mkdirSync(projectPath);
@@ -75,13 +84,7 @@ const createProject = (answers) => {
     const { name, ts } = answers;
 
     if (!name.length) {
-        console.log(
-            chalk.red(`
-
-❌ Error : You must provide a name to create the application
-            
-            `)
-        );
+        console.log(chalk.red(noNameMessage));
         return;
     }
     const templatePath = path.join(
@@ -108,13 +111,7 @@ const createProject = (answers) => {
     const result = postProcess(options);
 
     if (result) {
-        console.log(
-            chalk.green(`
-
-    ✅ Generation completed successfully !
-
-            `)
-        );
+        console.log(chalk.green(successMessage));
     }
 };
 
